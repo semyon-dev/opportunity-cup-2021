@@ -1,23 +1,32 @@
 import pymongo
 import certifi
+import os
+from dotenv import load_dotenv
 
-# Provide the mongodb atlas url to connect python to mongodb using pymongo
+load_dotenv()
 
-CONNECTION_STRING = "mongodb+srv://root:root@cluster0.ik40a.mongodb.net/Cluster0?retryWrites=true&w=majority&tls=true"
+CONNECTION_STRING = os.getenv('CONNECTION_STRING')
 
 # Create a connection using MongoClient. You can import MongoClient or use pymongo.MongoClient
 client = pymongo.MongoClient(CONNECTION_STRING, tlsCAFile=certifi.where())
 
-# Create the database for our example (we will use the same database throughout the tutorial
-db = client['main']
-data_collection = db["data"]
+# Create the database for our example
+db = client.main
+data_collection = db.data
 
 
-def insert_doc():
-    item_3 = {
-        "id": 0,
+def insert_doc(doc):
+    try:
+        data_collection.insert_one(doc)
+    except Exception as e:
+        print(e)
+
+
+if __name__ == '__main__':
+    item = {
+        "id": 1,
         "quantity": 2,
         "ingredients": "all-purpose flour",
         "expiry_date": "expiry"
     }
-    data_collection.insert_one(item_3)
+    insert_doc(item)
