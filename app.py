@@ -1,10 +1,11 @@
-import datetime
-import sys
-import pymongo
-import certifi
-import os
-from dotenv import load_dotenv
 import csv
+import datetime
+import os
+
+import certifi
+import pymongo
+from dotenv import load_dotenv
+from flask import Flask
 
 load_dotenv()
 
@@ -16,6 +17,20 @@ client = pymongo.MongoClient(CONNECTION_STRING, tlsCAFile=certifi.where())
 # Create the database for our example
 db = client.main
 data_collection = db.data
+
+app = Flask(__name__)
+
+
+@app.route("/data")
+def hello():
+    reply = []
+    for post in data_collection.find():
+        reply.append(post)
+    return {"data": reply}
+
+
+if __name__ == "__main__":
+    app.run(threaded=True, port=int(os.environ.get('PORT', 5000)))
 
 month_to_number = {
     'Январь': 1,
@@ -38,7 +53,6 @@ def insert_doc(doc):
         data_collection.insert_one(doc)
     except Exception as e:
         print(e)
-        sys.exit()
 
 
 def parse_format(items: list):
@@ -66,8 +80,7 @@ def parse_format(items: list):
     return arr
 
 
-if __name__ == '__main__':
-
+def parse_file_mongodb():
     with open('data.csv', encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         line_count = 0
