@@ -1,6 +1,7 @@
+gunicorn
 pymongo
 certifi
 python-dotenv
 dnspython
 flask
-gunicorn
+flask-cors

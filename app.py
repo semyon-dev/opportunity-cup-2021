@@ -6,6 +6,7 @@ import certifi
 import pymongo
 from dotenv import load_dotenv
 from flask import Flask
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -19,6 +20,7 @@ db = client.main
 data_collection = db.data
 
 app = Flask(__name__)
+CORS(app)
 
 
 @app.route("/data")
