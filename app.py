@@ -7,6 +7,7 @@ import pymongo
 from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
+from flask import request
 
 load_dotenv()
 
@@ -17,7 +18,7 @@ client = pymongo.MongoClient(CONNECTION_STRING, tlsCAFile=certifi.where())
 
 # Create the database for our example
 db = client.main
-data_collection = db.data
+data_collection = db.test
 
 app = Flask(__name__)
 CORS(app)
@@ -28,7 +29,45 @@ def hello():
     reply = []
     for post in data_collection.find():
         reply.append(post)
-    return {"data": reply}
+    return {'data': reply}
+
+
+def get_doc(id):
+    return data_collection.find_one({'_id': int(id)})
+
+
+def count(id, count_itog, cost, offset):
+    doc = get_doc(id)
+    if doc is None:
+        return count_itog, cost
+    if 'followers' not in doc:
+        return count_itog, cost
+    for follower in doc['followers']:
+        docF = get_doc(follower['n'])
+        if 'start' in docF and 'end' in doc:
+            buffer = docF['start'] - doc['end']
+            print(docF['start'], doc['end'])
+            buffer_seconds = buffer.total_seconds()
+            offset_seconds = offset * 24 * 3600
+            if buffer_seconds - offset_seconds < 0:
+                count_itog += 1
+                if docF['duration'] == 0:
+                    cost += 1000
+                else:
+                    cost += 1
+                count_itog2, cost2 = count(docF['_id'], count_itog, cost,
+                                           abs(buffer_seconds - offset_seconds) / 3600 / 24)
+                count_itog = count_itog2 + 1
+                cost = cost2 + 1
+    return count_itog, cost
+
+
+@app.route("/offset")
+def offset():
+    id = int(request.args.get('id', 0))
+    offset = int(request.args.get('offset', 0))
+    countVar, cost = count(id, 0, 0, offset)
+    return {"count": countVar, "cost": cost}
 
 
 if __name__ == "__main__":

@@ -2,6 +2,12 @@
 
 Решение для IT кейса
 
+*ПРОЕКТ ЕЩЕ НУЖНО ДОДЕЛАТЬ ДО 10 УТРА!*
+
+## heroku demo url
+
+https://opportunity-cup-2021.herokuapp.com/
+
 ## Стэк
 
 * Python 3.10
