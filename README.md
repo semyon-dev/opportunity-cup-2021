@@ -4,7 +4,7 @@
 
 *ПРОЕКТ ЕЩЕ НУЖНО ДОДЕЛАТЬ ДО 10 УТРА!*
 
-## heroku demo url
+## heroku api demo url
 
 https://opportunity-cup-2021.herokuapp.com/
 
