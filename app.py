@@ -47,7 +47,6 @@ def count(id, count_itog, cost, offset):
         docF = get_doc(follower['n'])
         if 'start' in docF and 'end' in doc:
             buffer = docF['start'] - doc['end']
-            print(docF['start'], doc['end'])
             buffer_seconds = buffer.total_seconds()
             offset_seconds = offset * 24 * 3600
             if buffer_seconds - offset_seconds < 0:
