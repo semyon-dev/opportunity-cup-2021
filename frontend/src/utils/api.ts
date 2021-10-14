@@ -7,3 +7,14 @@ export async function getTasks() {
     await axios.get(`https://opportunity-cup-2021.herokuapp.com/data`)
   ).data.data
 }
+
+export async function setOffset(id: number, offset: number) {
+  return (
+    await axios.get(`https://opportunity-cup-2021.herokuapp.com/offset`, {
+      params: {
+        id: id,
+        offset: offset
+      }
+    })
+  ).data
+}

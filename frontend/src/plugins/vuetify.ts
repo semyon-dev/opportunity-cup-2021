@@ -16,7 +16,15 @@ import Vuetify, {
   VMain,
   VProgressLinear,
   VDataTable,
-  VProgressCircular
+  VProgressCircular,
+  VDialog,
+  VTextField,
+  VCard,
+  VCardActions,
+  VCardText,
+  VCardTitle,
+  VDivider,
+  VToolbar
 } from 'vuetify/lib'
 import 'vuetify/dist/vuetify.min.css'
 
@@ -38,7 +46,15 @@ Vue.use(Vuetify, {
     VMain,
     VProgressLinear,
     VDataTable,
-    VProgressCircular
+    VProgressCircular,
+    VDialog,
+    VTextField,
+    VCard,
+    VCardActions,
+    VCardText,
+    VCardTitle,
+    VDivider,
+    VToolbar
   },
 })
 

@@ -2,7 +2,8 @@
 v-layout
   //- show content only if data is loaded. Unless show progress-circular
   v-layout(v-if='loaded') 
-    #navigation()
+    #navigation
+      pre#str
       svg(
         @mousedown='startDrag($event)',
         @mousemove='drag($event)',
@@ -18,21 +19,42 @@ v-layout
           stroke='#000',
           stroke-width='2'
         )
-    #svg-root
-    canvas#canvas-root(style='visibility: hidden')
-    pre#str
+    #svg-root 
+    canvas#canvas
+    v-dialog(v-model="dialog" width="500" transition="dialog-bottom-transition")
+      template(v-slot:activator="{ on }")
+      v-card()
+        v-toolbar(
+          color="primary"
+          dark) Изменить длину задачи
+        v-card-text.pa-8.text-h5 Введите количество дней, на которое нужно перенести задачу
+        v-divider
+        v-card-actions
+          v-text-field(placeholder="Количество дней" v-model="offsetCosts" small)
+          v-spacer
+          v-btn(
+            color="primary"
+            dark
+            @click="calcCosts") Рассчитать
+    #contextmenu
+      v-btn(dark x-small @click="dialog=true") Изменить длину задачи
   v-layout(v-else)
     v-progress-circular(indeterminate, :width='7', :size='70')
 </template>
 <script lang="ts" defer>
 import Vue from 'vue'
 import Component from 'vue-class-component'
+import { namespace } from 'vuex-class'
+const SnackbarStore = namespace('SnackbarStore')
+
 import { SVGGantt, CanvasGantt, StrGantt } from 'gantt'
 
-import { getTasks } from '@/utils/api'
+import { getTasks, setOffset } from '@/utils/api'
 
 @Component({})
 export default class GanttSimple extends Vue {
+  @SnackbarStore.Mutation setSnackbarSuccess!: (message: string) => void
+
   data = [
     {
       id: 1,
@@ -71,6 +93,7 @@ export default class GanttSimple extends Vue {
   svg = null
   svgRoot = null
   offset = { x: 0, y: 0 }
+  contextMenu = null
 
   getMousePosition(evt: Event) {
     let CTM = this.svg.getScreenCTM()
@@ -81,16 +104,21 @@ export default class GanttSimple extends Vue {
   }
 
   startDrag(evt: Event) {
-    if (this.svg === null)
-      this.svg = evt.target
+    if (this.svg === null) this.svg = evt.target
     if (this.svgRoot === null)
-      this.svgRoot = (document.getElementById("svg-root") as HTMLElement).children[0]
+      this.svgRoot = (
+        document.getElementById('svg-root') as HTMLElement
+      ).children[0]
 
     if (evt.target.classList.contains('draggable')) {
-      this.selectedElement = evt.target;
-      this.offset = this.getMousePosition(evt);
-      this.offset.x -= parseFloat(this.selectedElement.getAttributeNS(null, "x"));
-      this.offset.y -= parseFloat(this.selectedElement.getAttributeNS(null, "y"));
+      this.selectedElement = evt.target
+      this.offset = this.getMousePosition(evt)
+      this.offset.x -= parseFloat(
+        this.selectedElement.getAttributeNS(null, 'x')
+      )
+      this.offset.y -= parseFloat(
+        this.selectedElement.getAttributeNS(null, 'y')
+      )
     }
   }
   drag(evt: Event) {
@@ -108,6 +136,9 @@ export default class GanttSimple extends Vue {
 
   tasks = []
   loaded = false
+  dialog = false
+  offsetCosts = ""
+  idCosts = 0
 
   async processTasks() {
     try {
@@ -139,7 +170,7 @@ export default class GanttSimple extends Vue {
         task['label'] = 'task from the table'
         task['user'] = 'origin dev'
         task['percent'] = 1
-        task['parentId'] = 4
+        task['parentId'] = element['_id']
 
         if (Object.keys(element).includes('_id')) task['id'] = element['_id']
         task['text'] = task.id.toString()
@@ -149,9 +180,8 @@ export default class GanttSimple extends Vue {
 
         if (Object.keys(element).includes('duration'))
           task['end'] = new Date(
-            Date.parse(element['start']) + element['duration'] * 3600*1000
+            Date.parse(element['start']) + element['duration'] * 3600 * 1000
           )
-        console.log(task["id"], task['start'], task['end'], element['duration'])
 
         if (!element['duration']) {
           task['type'] = 'milestone'
@@ -186,27 +216,63 @@ export default class GanttSimple extends Vue {
     }
   }
 
-  updateSVGPosition(x: number, y:number) {
+  updateSVGPosition(x: number, y: number) {
     // console.log(this.svgRoot)
-    this.svgRoot.style.position = "absolute";
-    this.svgRoot.style.left = -x * this.svgRoot.getBBox().width / 200;
-    this.svgRoot.style.top = -y * this.svgRoot.getBBox().height / 100;
+    this.svgRoot.style.position = 'absolute'
+    this.svgRoot.style.left = (-x * this.svgRoot.getBBox().width) / 200
+    this.svgRoot.style.top = (-y * this.svgRoot.getBBox().height) / 100
+  }
+
+  showContextMenu(e: Event) {
+    this.contextMenu.style.visibility = "visible"
+    this.contextMenu.style.left = e.x + "px"
+    console.log(e, e.x, this.contextMenu.style.left)
+    this.contextMenu.style.top = e.y + "px"
+    let id: string = e.target.parentElement.children[4].children[0].attributes[1].value
+    this.idCosts = parseInt(id)  }
+
+  calcCosts() {
+    setOffset(this.idCosts, this.offsetCosts).then(response => {
+      this.setSnackbarSuccess("Количество сдвигов: " + response.count + " и цена: " + response.cost)
+      // alert("Количество сдвигов: " + response.count + " и цена: " + response.cost)
+    })
+  }
+
+  hideContextMenu(e: Event) {
+    this.contextMenu.style.visibility = "hidden"
+
   }
 
   mounted() {
+    document.addEventListener('contextmenu', function(event) {
+      event.preventDefault();
+    }, true); 
     this.processTasks().then(() => {
       let svgGantt = new SVGGantt('#svg-root', this.tasks, {
         viewMode: 'month',
       })
+      // svgGantt.render()
 
-      let canvasGantt = new CanvasGantt('#canvas-root', this.tasks, {
+      let canvasGantt = new CanvasGantt('#canvas', this.tasks, {
         viewMode: 'month',
       })
+      // canvasGantt.render()
 
       let strGantt = new StrGantt(this.tasks, {
         viewMode: 'month',
       })
       let body = strGantt.render()
+      this.contextMenu = document.getElementById("contextmenu")
+      document.getElementById("svg-root").addEventListener('mousedown', this.hideContextMenu)
+      let ganttBars = document.getElementsByClassName("gantt-bar")
+      for (var i = 0; i < ganttBars.length; i++) {
+        let leftDate = ganttBars[i].children[0]
+        let rightDate = ganttBars[i].children[1]
+        ganttBars[i].addEventListener('contextmenu', this.showContextMenu)
+        
+        // console.log(leftDate)
+        // bar -> :active
+      }
     })
   }
 }
@@ -229,6 +295,14 @@ export default class GanttSimple extends Vue {
   cursor: move;
 }
 #svg-root {
-  position: absolute!important;
+  position: absolute !important;
+}
+#canvas {
+  width: 200px!important;
+  height: 100px!important;
+}
+#contextmenu {
+  position: fixed;
+  visibility: hidden;
 }
 </style>
