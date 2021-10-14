@@ -51,11 +51,10 @@ def count(id, count_itog, cost, offset):
             buffer_seconds = buffer.total_seconds()
             offset_seconds = offset * 24 * 3600
             if buffer_seconds - offset_seconds < 0:
-                count_itog += 1
+                # count_itog += 1
                 if docF['duration'] == 0:
                     cost += 1000
-                else:
-                    cost += 1
+                    # cost += 1
                 count_itog2, cost2 = count(docF['_id'], count_itog, cost,
                                            abs(buffer_seconds - offset_seconds) / 3600 / 24)
                 count_itog = count_itog2 + 1
@@ -174,4 +173,3 @@ def parse_file_mongodb():
             line_count += 1
 
     print(f'\nProcessed {line_count} lines.')
-
