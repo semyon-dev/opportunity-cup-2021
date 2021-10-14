@@ -3,6 +3,7 @@ import datetime
 import os
 
 import certifi
+import flask
 import pymongo
 from dotenv import load_dotenv
 from flask import Flask
@@ -60,6 +61,14 @@ def count(id, count_itog, cost, offset):
                 count_itog = count_itog2 + 1
                 cost = cost2 + 1
     return count_itog, cost
+
+
+# app name
+@app.errorhandler(404)
+# inbuilt function which takes error as parameter
+def not_found(e):
+    # defining function
+    return flask.jsonify({"message": "invalid request, check README"})
 
 
 @app.route("/offset")
@@ -165,3 +174,4 @@ def parse_file_mongodb():
             line_count += 1
 
     print(f'\nProcessed {line_count} lines.')
+
