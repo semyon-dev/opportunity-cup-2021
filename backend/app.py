@@ -18,7 +18,7 @@ client = pymongo.MongoClient(CONNECTION_STRING, tlsCAFile=certifi.where())
 
 # Create the database for our example
 db = client.main
-data_collection = db.test
+data_collection = db.data
 
 app = Flask(__name__)
 CORS(app)
