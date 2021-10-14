@@ -49,7 +49,7 @@ v-layout
 <script lang="ts" defer>
 import Vue from 'vue'
 import Component from 'vue-class-component'
-import {Watch} from 'vue-property-decorator'
+import { Watch } from 'vue-property-decorator'
 import { namespace } from 'vuex-class'
 const AppStore = namespace('AppStore')
 const SnackbarStore = namespace('SnackbarStore')
@@ -126,88 +126,88 @@ export default class GanttSimple extends Vue {
 
   async processTasks() {
     try {
-        const tasks = await getTasks()
-        interface link {
-          target: number
-          type: 'FS' | 'FF' | 'SS' | 'SF'
-        }
-        interface taskInterface {
-          id: number
-          text: string
-          start: string
-          end: string
-          duration: number
-          type: string
-          dependentOn: number[]
-          percent: number
-          user: string
-          style: Object
-          label: string
-          parentId: number
-          links: link[]
-        }
-        console.log(tasks)
-        this.responseTasks = tasks
-        tasks.every((element) => {
-          // console.log(element, Object.keys(element))
-          let task: taskInterface = {}
+      const tasks = await getTasks()
+      interface link {
+        target: number
+        type: 'FS' | 'FF' | 'SS' | 'SF'
+      }
+      interface taskInterface {
+        id: number
+        text: string
+        start: string
+        end: string
+        duration: number
+        type: string
+        dependentOn: number[]
+        percent: number
+        user: string
+        style: Object
+        label: string
+        parentId: number
+        links: link[]
+      }
+      console.log(tasks)
+      this.responseTasks = tasks
+      tasks.every((element) => {
+        // console.log(element, Object.keys(element))
+        let task: taskInterface = {}
 
-          task['label'] = 'task from the table'
-          task['user'] = 'origin dev'
-          task['percent'] = 1
-          task['parentId'] = element['_id']
+        task['label'] = 'task from the table'
+        task['user'] = 'origin dev'
+        task['percent'] = 1
+        task['parentId'] = element['_id']
 
-          if (Object.keys(element).includes('_id')) task['id'] = element['_id']
-          task['text'] = task.id.toString()
+        if (Object.keys(element).includes('_id')) task['id'] = element['_id']
+        task['text'] = task.id.toString()
 
-          if (Object.keys(element).includes('start'))
-            task['start'] = new Date(element['start'])
+        if (Object.keys(element).includes('start'))
+          task['start'] = new Date(element['start'])
 
-          if (Object.keys(element).includes('duration'))
-            task['end'] = new Date(
-              Date.parse(element['start']) + element['duration'] * 3600 * 1000
-            )
+        if (Object.keys(element).includes('duration'))
+          task['end'] = new Date(
+            Date.parse(element['start']) + element['duration'] * 3600 * 1000
+          )
 
-          if (!element['duration']) {
-            task['type'] = 'milestone'
-            task['duration'] = 100
-          } else task['type'] = 'task'
+        if (!element['duration']) {
+          task['type'] = 'milestone'
+          task['duration'] = 100
+        } else task['type'] = 'task'
 
-          let dependOn: link[] = []
+        let dependOn: link[] = []
 
-          if (Object.keys(element).includes('predecessors'))
-            element['predecessors'].forEach((predecessor) => {
-              let type = ''
-              if (Object.keys(predecessor).includes('X')) {
-                type += predecessor['X'] == 'Н' ? 'S' : 'F'
-                type += predecessor['Y'] == 'Н' ? 'S' : 'F'
-                dependOn.push({
-                  target: predecessor['n'],
-                  type: type,
-                })
-                if (
-                  Object.keys(predecessor).includes('m') &&
-                  parseInt(predecessor['m']) > 0
-                ) {
-                  task['end'] = new Date(
-                    Date.parse(element['start']) +
-                      element['duration'] * 3600 * 1000 +
-                      parseInt(predecessor['m']) * 3600 * 1000
-                  )
-                  task['percent'] = 1 - predecessor['m'] / element['duration']
-                }
+        if (Object.keys(element).includes('predecessors'))
+          element['predecessors'].forEach((predecessor) => {
+            let type = ''
+            if (Object.keys(predecessor).includes('X')) {
+              type += predecessor['X'] == 'Н' ? 'S' : 'F'
+              type += predecessor['Y'] == 'Н' ? 'S' : 'F'
+              dependOn.push({
+                target: predecessor['n'],
+                type: type,
+              })
+              if (
+                Object.keys(predecessor).includes('m') &&
+                parseInt(predecessor['m']) > 0
+              ) {
+                task['end'] = new Date(
+                  Date.parse(element['start']) +
+                    element['duration'] * 3600 * 1000 +
+                    parseInt(predecessor['m']) * 3600 * 1000
+                )
+                task['percent'] = 1 - predecessor['m'] / element['duration']
               }
-            })
-          task['links'] = dependOn
-          // console.log(task)
-          this.tasks.push(task)
-          if (this.tasks.length > this.limit) return false
-          return true
-        })
-        console.log('returned')
-        console.log(this.tasks)
-        this.loaded = true
-      } catch (err) {
+            }
+          })
+        task['links'] = dependOn
+        // console.log(task)
+        this.tasks.push(task)
+        if (this.tasks.length > this.limit) return false
+        return true
+      })
+      console.log('returned')
+      console.log(this.tasks)
+      this.loaded = true
+    } catch (err) {
       console.log(err)
     }
   }
@@ -217,8 +217,10 @@ export default class GanttSimple extends Vue {
     this.contextMenu.style.left = e.x + 'px'
     console.log(e, e.x, this.contextMenu.style.left)
     this.contextMenu.style.top = e.y + 'px'
-    let id: string =
-      e.target.parentElement.children[4].children[0].attributes[1].value
+    let id: string = ''
+    if (e.target.tagName === 'polygon')
+      id = e.target.parentElement.children[1].attributes[1].value
+    else id = e.target.parentElement.children[4].children[0].attributes[1].value
     this.idCosts = parseInt(id)
   }
 
