@@ -24,7 +24,9 @@ import Vuetify, {
   VCardText,
   VCardTitle,
   VDivider,
-  VToolbar
+  VToolbar,
+  VSlider,
+  VTooltip
 } from 'vuetify/lib'
 import 'vuetify/dist/vuetify.min.css'
 
@@ -54,7 +56,9 @@ Vue.use(Vuetify, {
     VCardText,
     VCardTitle,
     VDivider,
-    VToolbar
+    VToolbar,
+    VSlider,
+    VTooltip
   },
 })
 

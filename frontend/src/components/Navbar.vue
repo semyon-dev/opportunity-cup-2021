@@ -1,10 +1,25 @@
 <template lang="pug">
 nav
-  v-app-bar(flat, app)
+  v-app-bar(flat, app, large)
     // Title
     v-toolbar-title.grey--text
       span {{ $t("title") }}
     v-spacer
+    v-tooltip(bottom)
+      template(v-slot:activator='{ on, attrs }')
+        v-slider.pt-12(
+          v-model='slider',
+          thumb-label,
+          :min='1000',
+          :max='13130',
+          step='500',
+          color='blue',
+          track-color='grey',
+          v-on='on',
+          v-bind='attrs',
+          @change='adjustLimit'
+        )
+      span Регулирует, сколько записей будет отображаться. Будьте осторожны! 7000 записей требуют 1Гб оперативной памяти
     // Dark mode
     v-btn(text, icon, color='grey', @click='toggleMode')
       v-icon(small) brightness_2
@@ -33,9 +48,13 @@ const AppStore = namespace('AppStore')
 @Component
 export default class Navbar extends Vue {
   @AppStore.State dark!: boolean
+  @AppStore.State limit!: number
 
   @AppStore.Mutation setDark!: (dark: boolean) => void
+  @AppStore.Mutation setLimit!: (limit: number) => void
   @AppStore.Mutation setLanguage!: (language: string) => void
+
+  slider = 5000
 
   get locales() {
     return [
@@ -51,6 +70,9 @@ export default class Navbar extends Vue {
     }
   }
 
+  adjustLimit() {
+    this.setLimit(this.slider)
+  }
   toggleMode() {
     this.setDark(!this.dark)
     ;(this.$vuetify.theme as any).dark = this.dark
@@ -59,6 +81,9 @@ export default class Navbar extends Vue {
     i18n.locale = locale
     this.setLanguage(locale)
     document.title = i18n.t('strippedTitle') as string
+  }
+  mounted() {
+    this.slider = this.limit
   }
 }
 </script>

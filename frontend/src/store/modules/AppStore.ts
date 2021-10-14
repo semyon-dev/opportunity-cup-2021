@@ -4,6 +4,7 @@ import { VuexModule, Module, Mutation } from 'vuex-module-decorators'
 export default class AppStore extends VuexModule {
   language?: string = undefined
   dark = false
+  limit = 5000
 
   @Mutation
   setLanguage(language: string) {
@@ -13,5 +14,10 @@ export default class AppStore extends VuexModule {
   @Mutation
   setDark(dark: boolean) {
     this.dark = dark
+  }
+
+  @Mutation
+  setLimit(limit: number) {
+    this.limit = limit
   }
 }
