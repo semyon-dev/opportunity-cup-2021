@@ -11,8 +11,10 @@
 * Посчитать потери переноса: `GET /offset` (пример: /offset?id=4&offset=4)
 * Получить все задачи: `GET /data`
 
-![img_1.png](img_1.png)
-![img_2.png](img_2.png)
+
+<img src="img_1.png" alt="drawing" width="500"/>
+<img src="img_2.png" alt="drawing" width="500"/>
+
 
 ## heroku api demo url
 
