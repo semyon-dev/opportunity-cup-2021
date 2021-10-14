@@ -104,4 +104,8 @@ nav a:hover {
 nav a:active {
   text-decoration: underline;
 }
+
+v-input__slider {
+  max-width: 350px;
+}
 </style>
