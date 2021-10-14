@@ -3,6 +3,7 @@ import datetime
 import os
 
 import certifi
+import flask
 import pymongo
 from dotenv import load_dotenv
 from flask import Flask
@@ -46,20 +47,26 @@ def count(id, count_itog, cost, offset):
         docF = get_doc(follower['n'])
         if 'start' in docF and 'end' in doc:
             buffer = docF['start'] - doc['end']
-            print(docF['start'], doc['end'])
             buffer_seconds = buffer.total_seconds()
             offset_seconds = offset * 24 * 3600
             if buffer_seconds - offset_seconds < 0:
-                count_itog += 1
+                # count_itog += 1
                 if docF['duration'] == 0:
                     cost += 1000
-                else:
-                    cost += 1
+                    # cost += 1
                 count_itog2, cost2 = count(docF['_id'], count_itog, cost,
                                            abs(buffer_seconds - offset_seconds) / 3600 / 24)
                 count_itog = count_itog2 + 1
                 cost = cost2 + 1
     return count_itog, cost
+
+
+# app name
+@app.errorhandler(404)
+# inbuilt function which takes error as parameter
+def not_found(e):
+    # defining function
+    return flask.jsonify({"message": "invalid request, check README"})
 
 
 @app.route("/offset")
