@@ -37,16 +37,17 @@ def get_doc(id):
     return data_collection.find_one({'_id': int(id)})
 
 
-def count(id, count_itog, cost, offset):
+def count(id, count_itog, cost, offset, total_buffer):
     doc = get_doc(id)
     if doc is None:
-        return count_itog, cost
+        return count_itog, cost, total_buffer
     if 'followers' not in doc:
-        return count_itog, cost
+        return count_itog, cost, total_buffer
     for follower in doc['followers']:
         docF = get_doc(follower['n'])
         if 'start' in docF and 'end' in doc:
             buffer = docF['start'] - doc['end']
+            total_buffer += buffer.total_seconds()
             buffer_seconds = buffer.total_seconds()
             offset_seconds = offset * 24 * 3600
             if buffer_seconds - offset_seconds < 0:
@@ -54,11 +55,13 @@ def count(id, count_itog, cost, offset):
                 if docF['duration'] == 0:
                     cost += 1000
                     # cost += 1
-                count_itog2, cost2 = count(docF['_id'], count_itog, cost,
-                                           abs(buffer_seconds - offset_seconds) / 3600 / 24)
+                count_itog2, cost2, total_buffer2 = count(docF['_id'], count_itog, cost,
+                                                          abs(buffer_seconds - offset_seconds) / 3600 / 24,
+                                                          total_buffer)
                 count_itog = count_itog2 + 1
                 cost = cost2 + 1
-    return count_itog, cost
+                total_buffer += total_buffer2
+    return count_itog, cost, total_buffer
 
 
 # app name
@@ -72,9 +75,9 @@ def not_found(e):
 @app.route("/offset")
 def offset():
     id = int(request.args.get('id', 0))
-    offset = int(request.args.get('offset', 0))
-    countVar, cost = count(id, 0, 0, offset)
-    return {"count": countVar, "cost": cost}
+    offset_var = int(request.args.get('offset', 0))
+    count_var, cost, total_buffer = count(id, 0, 0, offset_var, 0)
+    return {"count": count_var, "cost": cost, "total_buffer": int(total_buffer / 60 / 60 / 24)}
 
 
 if __name__ == "__main__":
