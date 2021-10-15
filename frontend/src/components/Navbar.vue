@@ -105,7 +105,7 @@ nav a:active {
   text-decoration: underline;
 }
 
-v-input__slider {
-  max-width: 350px;
+.v-input__slider {
+  max-width: 350px!important;
 }
 </style>
