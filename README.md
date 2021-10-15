@@ -1,6 +1,6 @@
-# Решение для for case-cup-2021
+# Решение для opportunity-cup-2021
 
-# BACKEND for case-cup-2021
+# BACKEND
 
 Решение для IT кейса
 
