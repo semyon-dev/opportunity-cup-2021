@@ -1,521 +1,350 @@
 <template lang="pug">
-.v-container.pa-4
-  canvas#container
-  // Main content
-  v-layout(col)
-    //- v-data-table
-    //- c-grid.demo-grid(:data='records' :options="{parentElement: document.getElemenById('container')}")
-    //-   // define checkbox
-    //-   c-grid-check-column(field='check', width='50', height='25')
-    //-     c-grid-column(field='personid', width='85', height='25') ID
-    //-     // multiple header
-    //-   c-grid-column-group(caption='Name')
-    //-     c-grid-input-column(field='fname', width='20%', min-width='150', height='25')
-    //-       | First Name
-    //-     c-grid-input-column(field='lname', width='20%', min-width='150', height='25')
-    //-       | Last Name
-    //-     // button
-    //-   c-grid-button-column(
-    //-     caption='SHOW REC',
-    //-     width='120',
-    //-     @click='onClickRecord'
-    //-   )
-    //-     .grid-sample
-
-    v-stage#container(
-      ref='stage',
-      :config='configKonva',
-      @mousedown='handleStageMouseDown',
-      @touchstart='handleStageMouseDown',
-      @wheel='onWheel($event)'
+v-layout
+  //- show content only if data is loaded. Unless show progress-circular
+  v-layout(v-if='loaded') 
+    #navigation
+      svg#navigation-svg(
+        @mousedown='startDrag($event)',
+        @mousemove='drag($event)',
+        @mouseleave='endDrag($event)',
+        @mouseup='endDrag($event)',
+        width='400'
+      )
+        g(transform='translate(0, 0)')
+          rect.draggable(
+            x='5',
+            y='0',
+            width='40',
+            height='50',
+            fill='rgba(0, 0, 0, 0.1)',
+            stroke='rgba(0, 0, 0, 0.5)',
+            stroke-width='2'
+          )
+    #svg-root 
+    pre#str
+    canvas#canvas
+    v-dialog(
+      v-model='dialog',
+      width='500',
+      transition='dialog-bottom-transition'
     )
-      v-layer(ref='layer')
-        v-rect(
-          v-for='item in rectangles',
-          :key='item.id',
-          :config='item',
-          @transformend='handleTransformEnd',
-          @dragstart='dragstartRect',
-          @dragmove='dragmoveRect',
-          @dragend='dragendRect',
-          :ref='item.name'
-        )
-        v-transformer(ref='transformer')
-  v-layout.text-center(column, justify-center, align-center)
-    v-flex.pt-4
-      .caption
-        router-link(to='/gantt') {{ $t("home.privacy") }}
-    v-progress-linear(color='light-blue', height='10', value='10', striped)
+      template(v-slot:activator='{ on }')
+      v-card
+        v-toolbar(color='primary', dark) Изменить длину задачи
+        v-card-text.pa-8.text-h5 Введите количество дней, на которое нужно перенести задачу
+        v-divider
+        v-card-actions
+          v-text-field(
+            placeholder='Количество дней',
+            v-model='offsetCosts',
+            small
+          )
+          v-spacer
+          v-btn(color='primary', dark, @click='calcCosts') Рассчитать
+    #contextmenu
+      v-btn(dark, x-small, @click='dialog = true') Изменить длину задачи
+  v-layout(v-else)
+    v-progress-circular(indeterminate, :width='7', :size='70')
 </template>
-
-<script lang="ts">
+<script lang="ts" defer>
 import Vue from 'vue'
-import axios from 'axios'
 import Component from 'vue-class-component'
-import { i18n } from '@/plugins/i18n'
+import { Watch } from 'vue-property-decorator'
 import { namespace } from 'vuex-class'
-
-import Konva from 'konva'
-import VueKonva from 'vue-konva'
-Vue.use(VueKonva)
-
-import vueCheetahGrid from 'vue-cheetah-grid'
-Vue.use(vueCheetahGrid)
-
 const AppStore = namespace('AppStore')
 const SnackbarStore = namespace('SnackbarStore')
 
-@Component({
-  components: {},
-})
-export default class Home extends Vue {
-  @SnackbarStore.Mutation setSnackbarError!: (error: string) => void
+import { SVGGantt, CanvasGantt, StrGantt } from 'gantt'
 
-  records = [
-    {
-      personid: 1,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 2,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 3,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 4,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 5,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 6,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 7,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 8,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-    {
-      personid: 9,
-      fname: 'Charlotte',
-      lname: 'Foster',
-      email: 'abc@def.gh',
-      birthday: '2001-01-12T21:00.00.000Z',
-    },
-  ]
-  onClickRecord(rec: any) {
-    alert(JSON.stringify(rec))
-  }
+import { getTasks, setOffset } from '@/utils/api'
 
-  rectangles = [
-    {
-      rotation: 0,
-      x: 25,
-      y: 25,
-      width: 225,
-      height: 25,
-      scaleX: 1,
-      scaleY: 1,
-      name: 'rect1',
-      fill: 'white',
-      stroke: '#ddd',
-      strokeWidth: 1,
-      shadowColor: 'black',
-      shadowBlur: 2,
-      shadowOffset: { x: 1, y: 1 },
-      shadowOpacity: 0.4,
-      draggable: true,
-    },
-    {
-      rotation: 0,
-      x: 150,
-      y: 150,
-      width: 225,
-      height: 25,
-      scaleX: 1,
-      scaleY: 1,
-      fill: 'green',
-      name: 'rect2',
-      stroke: '#ddd',
-      strokeWidth: 1,
-      shadowColor: 'black',
-      shadowBlur: 2,
-      shadowOffset: { x: 1, y: 1 },
-      shadowOpacity: 0.4,
-      draggable: true,
-    },
-  ]
-  selectedShapeName = ''
+@Component({})
+export default class GanttSimple extends Vue {
+  @AppStore.State limit!: number
+  @SnackbarStore.Mutation setSnackbarSuccess!: (message: string) => void
 
-  handleTransformEnd(e: any) {
-    // shape is transformed, let us save new attrs back to the node
-    // find element in our state
-    // const rect = (this.$refs['rect2'] as any)[0].getNode()
+  selectedElement = null
+  svg = null
+  svgRoot = null
+  offset = { x: 0, y: 0 }
+  contextMenu = null
 
-    // update the state
-    console.log(e.target)
-    e.target.width(
-      Math.round((e.target.width() * e.target.scale().x) / this.blockSnapSize) *
-        this.blockSnapSize
-    )
-    e.target.x(
-      Math.round(e.target.x() / this.blockSnapSize) * this.blockSnapSize
-    )
-    this.shadowRectangle.width(e.target.width())
-    // set scale to normal value
-    e.target.scaleX(1)
+  // Navigation methods section
 
-    // Disable scale by y axis
-    e.target.scaleY(1)
-    e.target.height(this.blockSnapSize)
-
-    // Disable rotation
-    e.target.rotation(0)
-  }
-  handleStageMouseDown(e: any) {
-    // clicked on stage - clear selection
-    if (e.target === e.target.getStage()) {
-      this.selectedShapeName = ''
-      this.updateTransformer()
-      return
-    }
-
-    // clicked on transformer - do nothing
-    const clickedOnTransformer =
-      e.target.getParent().className === 'Transformer'
-    if (clickedOnTransformer) {
-      return
-    }
-
-    // find clicked rect by its name
-    const name = e.target.name()
-    const rect = this.rectangles.find((r) => r.name === name)
-    if (rect) {
-      this.selectedShapeName = name
-    } else {
-      this.selectedShapeName = ''
-    }
-    this.updateTransformer()
-  }
-
-  updateTransformer() {
-    // here we need to manually attach or detach Transformer node
-    const transformerNode = (this.$refs.transformer as any).getNode()
-    console.log(this.selectedShapeName)
-
-    const stage = transformerNode.getStage()
-    const { selectedShapeName } = this
-
-    const selectedNode = stage.findOne('.' + selectedShapeName)
-    // do nothing if selected node is already attached
-    if (selectedNode === transformerNode.node()) {
-      return
-    }
-
-    if (selectedNode) {
-      // attach to another node
-      transformerNode.nodes([selectedNode])
-    } else {
-      // remove transformer
-      transformerNode.nodes([])
+  getMousePosition(evt: Event) {
+    let CTM = this.svg.getScreenCTM()
+    return {
+      x: (evt.clientX - CTM.e) / CTM.a,
+      y: (evt.clientY - CTM.f) / CTM.d,
     }
   }
 
-  configKonva = {
-    width: 900,
-    height: 800,
-    draggable: true,
-    container: 'container',
-    zoomable: true,
+  updateSVGPosition(x: number, y: number) {
+    // updates #svg-root position based on naviagtion rectangle position
+    this.svgRoot.style.position = 'absolute'
+    this.svgRoot.style.left = (-x * this.svgRoot.getBBox().width) / 450
+    // this.svgRoot.style.top = (-y * this.svgRoot.getBBox().height) / 150
   }
 
-  width = window.innerWidth
-  height = window.innerHeight
-  shadowOffset = 20
-  tween = null
-  blockSnapSize = 25
+  startDrag(evt: Event) {
+    if (this.svg === null) this.svg = evt.target
+    if (this.svgRoot === null)
+      this.svgRoot = (
+        document.getElementById('svg-root') as HTMLElement
+      ).children[0]
 
-  shadowRectangle: any
-  leftRectangle: any
-  rightRectangle: any
-  stage: any
-  layer: any
-  scaleBy = 2.5
-
-  dragstartRect(e: any) {
-    this.shadowRectangle.width(e.target.width())
-    this.shadowRectangle.show()
-    this.shadowRectangle.moveToTop()
-    e.target.moveToTop()
+    if (evt.target.classList.contains('draggable')) {
+      this.selectedElement = evt.target
+      this.offset = this.getMousePosition(evt)
+      this.offset.x -= parseFloat(
+        this.selectedElement.getAttributeNS(null, 'x')
+      )
+      // this.offset.y -= parseFloat(this.selectedElement.getAttributeNS(null, 'y'))
+    }
+  }
+  drag(evt: Event) {
+    if (this.selectedElement) {
+      evt.preventDefault()
+      var coord = this.getMousePosition(evt)
+      this.selectedElement.setAttributeNS(null, 'x', coord.x - this.offset.x)
+      // this.selectedElement.setAttributeNS(null, 'y', coord.y - this.offset.y)
+      this.updateSVGPosition(coord.x - this.offset.x, coord.y - this.offset.y)
+    }
+  }
+  endDrag(evt: Event) {
+    this.selectedElement = null
   }
 
-  dragmoveRect(e: any) {
-    // console.log(rectangle.attrs())
-    this.shadowRectangle.position({
-      x: Math.round(e.target.x() / this.blockSnapSize) * this.blockSnapSize,
-      y: Math.round(e.target.y() / this.blockSnapSize) * this.blockSnapSize,
-    })
-    this.stage.batchDraw()
-  }
+  // Tasks processing section
 
-  dragendRect(e: any) {
-    e.target.position({
-      x: Math.round(e.target.x() / this.blockSnapSize) * this.blockSnapSize,
-      y: Math.round(e.target.y() / this.blockSnapSize) * this.blockSnapSize,
-    })
-    this.stage.batchDraw()
-    this.shadowRectangle.hide()
-  }
+  responseTasks = []
+  tasks = []
+  loaded = false
+  dialog = false
+  offsetCosts = ''
+  idCosts = 0
 
-  newRectangle(x: number, y: number, layer: Konva.Layer, stage: Konva.Stage) {
-    let rectangle = new Konva.Rect({
-      x: x,
-      y: y,
-      width: this.blockSnapSize * 6,
-      height: this.blockSnapSize * 3,
-      fill: '#fff',
-      stroke: '#ddd',
-      strokeWidth: 1,
-      shadowColor: 'black',
-      shadowBlur: 2,
-      shadowOffset: { x: 1, y: 1 },
-      shadowOpacity: 0.4,
-      draggable: true,
-    })
-    layer.add(rectangle)
-  }
+  async processTasks() {
+    try {
+      const tasks = await getTasks()
+      interface link {
+        target: number
+        type: 'FS' | 'FF' | 'SS' | 'SF'
+      }
+      interface taskInterface {
+        id: number
+        text: string
+        start: string
+        end: string
+        duration: number
+        type: string
+        dependentOn: number[]
+        percent: number
+        user: string
+        style: Object
+        label: string
+        parentId: number
+        links: link[]
+      }
+      console.log(tasks)
+      this.responseTasks = tasks
+      tasks.every((element) => {
+        // console.log(element, Object.keys(element))
+        let task: taskInterface = {}
 
-  animationDuration = 300 //in miliseconds
-  startScale = 0
-  startTime = 0
-  endScale = 100
-  startPosX = 0
-  endPosX = 0
-  startPosY = 0
-  endPosY = 0
+        task['label'] = 'task from the table'
+        task['user'] = 'origin dev'
+        task['percent'] = 1
+        task['parentId'] = element['_id']
 
-  onWheelAnimate(currentTime: number) {
-    if (!this.startTime) this.startTime = Date.now()
-    var elapsedTime = currentTime - this.startTime + 0.1
-    if (elapsedTime < this.animationDuration) {
-      let currentValue =
-        this.startScale +
-        (elapsedTime / this.animationDuration) *
-          (this.endScale - this.stage.scaleX())
-      //set your field value to currentValue here with something like document.getElemenById...
-      //call the next animation frame
-      // console.log(currentValue);
-      this.stage.scale({ x: currentValue, y: currentValue })
-      // let pointer = this.stage.getPointerPosition()
+        if (Object.keys(element).includes('_id')) task['id'] = element['_id']
+        task['text'] = task.id.toString()
 
-      // let mousePointTo = {
-      //   x: (pointer.x - this.stage.x()) / this.stage.scaleX(),
-      //   y: (pointer.y - this.stage.y()) / this.stage.scaleY(),
-      // }
-      // // console.log(mousePointTo, pointer);
-      // var newPos = {
-      //   x: pointer.x - mousePointTo.x * currentValue,
-      //   y: pointer.y - mousePointTo.y * currentValue,
-      // }
-      // this.newRectangle(mousePointTo.x * currentValue, mousePointTo.y * currentValue , this.layer, this.stage);
+        if (Object.keys(element).includes('start'))
+          task['start'] = new Date(element['start'])
 
-      // console.log("newPos", newPos);
-      this.stage.position({
-        x:
-          (elapsedTime / this.animationDuration) *
-          (this.endPosX - this.stage.x()),
-        y:
-          (elapsedTime / this.animationDuration) *
-          (this.endPosY - this.stage.y()),
+        if (Object.keys(element).includes('duration'))
+          task['end'] = new Date(
+            Date.parse(element['start']) + element['duration'] * 3600 * 1000
+          )
+
+        if (!element['duration']) {
+          task['type'] = 'milestone'
+          task['duration'] = 100
+        } else task['type'] = 'task'
+
+        let dependOn: link[] = []
+
+        if (Object.keys(element).includes('predecessors'))
+          element['predecessors'].forEach((predecessor) => {
+            let type = ''
+            if (Object.keys(predecessor).includes('X')) {
+              type += predecessor['X'] == 'Н' ? 'S' : 'F'
+              type += predecessor['Y'] == 'Н' ? 'S' : 'F'
+              dependOn.push({
+                target: predecessor['n'],
+                type: type,
+              })
+              if (
+                Object.keys(predecessor).includes('m') &&
+                parseInt(predecessor['m']) > 0
+              ) {
+                task['end'] = new Date(
+                  Date.parse(element['start']) +
+                    element['duration'] * 3600 * 1000 +
+                    parseInt(predecessor['m']) * 3600 * 1000
+                )
+                task['percent'] = 1 - predecessor['m'] / element['duration']
+              }
+            }
+          })
+        task['links'] = dependOn
+        // console.log(task)
+        this.tasks.push(task)
+        if (this.tasks.length > this.limit) return false
+        return true
       })
-      setTimeout(() => this.onWheelAnimate(Date.now()), 1)
+      console.log('returned')
+      console.log(this.tasks)
+      this.loaded = true
+    } catch (err) {
+      console.log(err)
     }
   }
 
-  onWheel(e: WheelEvent) {
-    console.log(Date.now())
-    this.startTime = 0
-    this.startScale = this.stage.scaleX()
-    console.log(this.startScale)
-    let pointer = this.stage.getPointerPosition()
-    this.endScale =
-      e.deltaY < 0
-        ? this.startScale * this.scaleBy
-        : this.startScale / this.scaleBy
-    this.startPosX = pointer.x - this.stage.x()
-    this.endPosX = this.stage.width() / 2
-    this.startPosY = pointer.y - this.stage.y()
-    this.endPosY = this.stage.height() / 2
-    console.log(this.startPosX, this.startPosY)
-    console.log(this.endPosX, this.endPosY)
-    this.newRectangle(this.startPosX, this.startPosY, this.layer, this.stage)
-    this.newRectangle(this.endPosX, this.endPosY, this.layer, this.stage)
+  showContextMenu(e: Event) {
+    this.contextMenu.style.visibility = 'visible'
+    this.contextMenu.style.left = e.x + 'px'
+    console.log(e, e.x, this.contextMenu.style.left)
+    this.contextMenu.style.top = e.y + 'px'
+    let id: string = ''
+    if (e.target.tagName === 'polygon')
+      id = e.target.parentElement.children[1].attributes[1].value
+    else id = e.target.parentElement.children[4].children[0].attributes[1].value
+    this.idCosts = parseInt(id)
+  }
 
-    // this.stage.scale({x: this.endScale, y: this.endScale});
-
-    console.log('->', this.endScale)
-    this.onWheelAnimate(Date.now())
-
-    this.stage.position({
-      x: this.stage.x(),
-      y: this.stage.y(),
+  calcCosts() {
+    setOffset(this.idCosts, this.offsetCosts).then((response) => {
+      this.setSnackbarSuccess(
+        'Количество сдвигов: ' + response.count + ' и цена: ' + response.cost
+      )
     })
-    this.stage.scale({ x: this.endScale, y: this.endScale })
-    this.stage.position({
-      x: -this.stage.x(),
-      y: -this.stage.y(),
-    })
+  }
+
+  hideContextMenu(e: Event) {
+    this.contextMenu.style.visibility = 'hidden'
+  }
+
+  colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
+    interface rgb {
+      red: number
+      green: number
+      blue: number
+    }
+    let color1: rgb = rgbColor1
+    let color2: rgb = rgbColor2
+    let fade = fadeFraction * 2
+
+    // Find which interval to use and adjust the fade percentage
+    if (fade >= 1) {
+      fade -= 1
+      color1 = rgbColor2
+      color2 = rgbColor3
+    }
+
+    let diffRed: number = color2.red - color1.red
+    let diffGreen: number = color2.green - color1.green
+    let diffBlue: number = color2.blue - color1.blue
+
+    let gradient = {
+      red: parseInt(Math.floor(color1.red + diffRed * fade), 10),
+      green: parseInt(Math.floor(color1.green + diffGreen * fade), 10),
+      blue: parseInt(Math.floor(color1.blue + diffBlue * fade), 10),
+    }
+    return (
+      'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')'
+    )
   }
 
   mounted() {
-    this.shadowRectangle = new Konva.Rect({
-      x: 0,
-      y: 0,
-      width: this.blockSnapSize * 9,
-      height: this.blockSnapSize,
-      fill: '#FF7B17',
-      opacity: 0.6,
-      stroke: '#CF6412',
-      strokeWidth: 3,
-      dash: [20, 2],
-    })
+    document.addEventListener(
+      'contextmenu',
+      function (event) {
+        event.preventDefault()
+      },
+      true
+    )
+    this.processTasks().then(() => {
+      let svgGantt = new SVGGantt('#svg-root', this.tasks, {
+        viewMode: 'month',
+      })
 
-    this.stage = (this.$refs.stage as any).getNode()
+      let canvasGantt = new CanvasGantt('#canvas', this.tasks, {
+        viewMode: 'month',
+      })
 
-    this.stage.on('click tap', (e: Event) => {
-      if (e.target === this.stage) {
-        document.body.style.cursor = 'cursorurl'
-        this.stage.batchDraw()
+      let strGantt = new StrGantt(this.tasks, {
+        viewMode: 'month',
+      })
+      let body = strGantt.render()
+      this.contextMenu = document.getElementById('contextmenu')
+      document
+        .getElementById('svg-root')
+        .addEventListener('mousedown', this.hideContextMenu)
+      let c1 = { red: 19, green: 233, blue: 200 }
+      let c2 = { red: 255, green: 235, blue: 20 }
+      let c3 = { red: 255, green: 0, blue: 0 }
+      let ganttBars = document.getElementsByClassName('gantt-bar')
+      for (let i = 0; i < ganttBars.length; i++) {
+        ganttBars[i].addEventListener('contextmenu', this.showContextMenu)
+        if (ganttBars[i].children.length > 2)
+          ganttBars[i].children[2].style.fill = 'rgba(0, 0, 0, .1)'
+        if (ganttBars[i].children.length > 3)
+          ganttBars[i].children[3].style.fill = this.colorGradient(
+            Math.random(),
+            c3,
+            c2,
+            c1
+          )
       }
     })
+  }
 
-    var gridLayer = new Konva.Layer()
-    var padding = this.blockSnapSize
-    console.log(this.width, padding, this.width / padding)
-    for (var i = 0; i < this.width / padding; i++) {
-      gridLayer.add(
-        new Konva.Line({
-          points: [
-            Math.round(i * padding) + 0.5,
-            0,
-            Math.round(i * padding) + 0.5,
-            this.height,
-          ],
-          stroke: '#999',
-          strokeWidth: 1,
-        })
-      )
-    }
-
-    gridLayer.add(new Konva.Line({ points: [0, 0, 10, 10] }))
-    for (var j = 0; j < this.height / padding; j++) {
-      gridLayer.add(
-        new Konva.Line({
-          points: [
-            0,
-            Math.round(j * padding),
-            this.width,
-            Math.round(j * padding),
-          ],
-          stroke: j % 4 == 0 ? '#cecece' : '#fff',
-          strokeWidth: 1,
-        })
-      )
-    }
-
-    this.layer = (this.$refs.layer as any).getNode()
-    this.shadowRectangle.hide()
-    this.layer.add(this.shadowRectangle)
-    this.newRectangle(
-      this.blockSnapSize * 3,
-      this.blockSnapSize * 3,
-      this.layer,
-      this.stage
-    )
-    this.newRectangle(
-      this.blockSnapSize * 10,
-      this.blockSnapSize * 3,
-      this.layer,
-      this.stage
-    )
-    this.newRectangle(
-      this.blockSnapSize * 10,
-      this.blockSnapSize * 3,
-      this.layer,
-      this.stage
-    )
-
-    this.stage.add(gridLayer)
-    this.stage.add(this.layer)
+  @Watch('limit')
+  onLimitChange() {
+    this.loaded = false
+    if (this.tasks.length > this.limit) this.tasks = []
+    this.$router.go(this.$router.currentRoute)
   }
 }
 </script>
-
-<style scoped>
-html {
-  height: 100%;
+<style>
+#navigation {
+  position: fixed;
+  background: rgba(0, 0, 0, 0.27) !important;
+  right: 15px;
+  bottom: 15px;
+  width: 400px;
+  height: 50px;
+  border-radius: 3px;
+  z-index: 999999;
 }
-body {
-  height: calc(100% - 100px);
+.static {
+  cursor: not-allowed;
 }
-.contents {
-  padding: 30px;
-  box-sizing: border-box;
+.draggable {
+  cursor: move;
 }
-.demo-grid {
-  width: 500px;
-  height: 300px;
-  box-sizing: border-box;
-  border: solid 1px #ddd;
+#svg-root {
+  position: absolute !important;
 }
-.demo-grid.large {
-  height: 500px;
+#canvas {
+  width: 200px !important;
+  height: 100px !important;
 }
-.demo-grid.middle {
-  height: 300px;
-}
-.demo-grid.small {
-  height: 240px;
-}
-.log {
-  /* width: 100%; */
-  height: 80px;
-  background-color: #f5f5f5;
-}
-.hljs {
-  tab-size: 4;
+#contextmenu {
+  position: fixed;
+  visibility: hidden;
 }
 </style>
